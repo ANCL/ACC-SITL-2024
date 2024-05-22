@@ -138,6 +138,7 @@ int main(int argc, char **argv)
         double controller_output[3] = {};
         double Kv12[12] = {2.2361,    3.1623, 3.1623,   3.0777,    8.4827,    8.4827,  0,    9.7962,    9.7962,  0,    5.4399,    5.4399};
         double Param[4] = {1.5, 0.2, 1, 9.8};
+        double Setpoint[3] = {0, 0, -0.3};
         for (int i=0;i<10; i++){
           dv[i] = PTState.PT_states[i];
           // ROS_INFO_STREAM( "dv[i]: "<< i << " : " << dv[i] << "\n");
@@ -146,7 +147,7 @@ int main(int argc, char **argv)
           t0 = ros::Time::now().toSec();
           // ROS_INFO_STREAM(t0);
         }
-        StabController(dv, Kv12, Param, controller_output);
+        StabController(dv, Kv12, Param, Setpoint, controller_output);
         // TracController(dv, Kv12, Param,  ros::Time::now().toSec()-t0, controller_output);
         force_attitude_convert(controller_output, attitude);
         target_attitude_pub.publish(attitude);
