@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+//#include <geometry_msgs/TransformStamped.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
@@ -16,7 +17,7 @@
 #include <tf2/transform_datatypes.h>
 
 #include <StabController.h>
-#include <TracController.h>
+//#include <TracController.h>
 #include <rtwtypes.h>
 #include <cstddef>
 #include <cstdlib>
@@ -25,6 +26,11 @@
 void gazebo_state_cb(const gazebo_msgs::LinkStates::ConstPtr& msg);
 void PT_state_pub(ros::Publisher &sls_state_pub);
 void force_attitude_convert(double controller_output[3], mavros_msgs::AttitudeTarget &attitude);
+void pose_cb(const geometry_msgs::PoseStamped::ConstPtr& msg);
+
+geometry_msgs::PoseStamped current_local_pos;
+
+//geometry_msgs::TwistStamped load_vel;
 
 geometry_msgs::Pose quadpose;
 geometry_msgs::Pose loadpose;
@@ -32,6 +38,8 @@ geometry_msgs::Pose pendpose;
 geometry_msgs::Twist pendtwist;
 geometry_msgs::Twist quadtwist;
 geometry_msgs::Twist loadtwist;
+
+offboardholy::PTStates PTState;
 
 template<typename T>
 T saturate(T val, T min, T max) {
@@ -53,12 +61,6 @@ void state_cb(const mavros_msgs::State::ConstPtr& msg){
     current_state = *msg;
 }
 
-geometry_msgs::PoseStamped current_local_pos;
-void pose_cb(const geometry_msgs::PoseStamped::ConstPtr& msg)
-{
-	current_local_pos = *msg;
-}
-
 geometry_msgs::TwistStamped current_local_vel;
 void vel_cb(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
@@ -69,7 +71,36 @@ struct sls_state {
     double x, y, z, alpha, beta, vx, vy, vz, gamma_alpha, gamma_beta;
 }sls_state1;
 
-offboardholy::PTStates PTState;
+
+//geometry_msgs::PoseStamped load_pose, load_pose0;
+//double diff_time; 
+/*void loadpose_cb(const geometry_msgs::TransformStamped::ConstPtr& msg){
+    load_pose.header.frame_id = "map";
+    
+    load_pose.header.stamp = ros::Time::now();
+    
+    load_pose.pose.position.x = msg->transform.translation.x;
+    load_pose.pose.position.y = msg->transform.translation.y;
+    load_pose.pose.position.z = msg->transform.translation.z;
+    load_pose.pose.orientation = msg->transform.rotation;
+    
+}*/
+
+/*void timerCallback(const ros::TimerEvent&){
+    load_vel.header.frame_id = "map";
+    // diff_time = ros::Time::now().toSec() - load_pose.header.stamp.toSec();
+    diff_time = 0.05;
+    load_vel.header.stamp = ros::Time::now();
+    load_vel.twist.linear.x = (load_pose.pose.position.x - load_pose0.pose.position.x)/diff_time;
+    load_vel.twist.linear.y = (load_pose.pose.position.y - load_pose0.pose.position.y)/diff_time;
+    load_vel.twist.linear.z = (load_pose.pose.position.z - load_pose0.pose.position.z)/diff_time;
+
+    load_pose0.pose.position.x = load_pose.pose.position.x;
+    load_pose0.pose.position.y = load_pose.pose.position.y;
+    load_pose0.pose.position.z = load_pose.pose.position.z;
+    
+    // ROS_INFO_STREAM("Load Velocity: " << load_vel.twist.linear.x << "  " << load_vel.twist.linear.y << "  " << load_vel.twist.linear.z);
+}*/
 
 
 int main(int argc, char **argv)
@@ -81,15 +112,17 @@ int main(int argc, char **argv)
   ros::Subscriber local_pos_sub = nh.subscribe<geometry_msgs::PoseStamped>("mavros/local_position/pose",10,pose_cb);
   ros::Subscriber local_vel_sub = nh.subscribe<geometry_msgs::TwistStamped>("mavros/local_position/velocity_local",10,vel_cb);
   ros::Subscriber gazebo_state_sub = nh.subscribe<gazebo_msgs::LinkStates>("gazebo/link_states", 10, gazebo_state_cb);
+  //ros::Subscriber load_vicon_sub = nh.subscribe<geometry_msgs::TransformStamped>("/vicon/Load4Ball/Load4Ball",10, loadpose_cb);
 
   ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
   ros::Publisher attitude_setpoint_pub = nh.advertise<mavros_msgs::AttitudeTarget>("mavros/setpoint_raw/attitude", 10);
   ros::Publisher sls_state_pub = nh.advertise<offboardholy::PTStates>("/offboardholy/sls_state", 10);
   ros::Publisher target_attitude_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/offboardholy/target_attitude", 10);
 
-
   ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
   ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
+
+  //ros::Timer timer = nh.createTimer(ros::Duration(0.05), timerCallback);
 
   //the setpoint publishing rate MUST be faster than 2Hz
   ros::Rate rate(50.0);
@@ -103,17 +136,15 @@ int main(int argc, char **argv)
   attitude.orientation.w = 0;
   attitude.thrust = 0.2;
 
-  
-
   //send a few setpoints before starting
-  for(int i = 100; ros::ok() && i > 0; --i){
+  /*for(int i = 100; ros::ok() && i > 0; --i){
       // pose.header.stamp = ros::Time::now();
       // local_pos_pub.publish(pose);
       attitude.header.stamp = ros::Time::now();
       attitude_setpoint_pub.publish(attitude);
       ros::spinOnce();
       rate.sleep();
-  }
+  }*/
 
   mavros_msgs::SetMode offb_set_mode;
   offb_set_mode.request.custom_mode = "OFFBOARD";
@@ -131,28 +162,33 @@ int main(int argc, char **argv)
     int stage = 0;
 
     while(ros::ok()){   
-        attitude.header.stamp = ros::Time::now();
-        // attitude_setpoint_pub.publish(attitude);
         PT_state_pub(sls_state_pub);
+
+
         double dv[10] = {};
         double controller_output[3] = {};
         double Kv12[12] = {2.2361,    3.1623, 3.1623,   3.0777,    8.4827,    8.4827,  0,    9.7962,    9.7962,  0,    5.4399,    5.4399};
+        //double Kv12[12] = {2.2361,    3.1623, 3.1623,   3.0777,    8.4827,    8.4827,  0,    18.7962,    18.7962,  0,    17.4399,    17.4399};
+        //double Kv12[12] = {3.0777,    5,  5,   2.2361,   6,    6,  0,     4,     4,  0,    3.1623,    3.1623};
         double Param[4] = {1.5, 0.2, 1, 9.8};
-        double Setpoint[3] = {0, 0, -0.3};
+        double Setpoint[3] = {0, 0, -1.1};
         for (int i=0;i<10; i++){
           dv[i] = PTState.PT_states[i];
           // ROS_INFO_STREAM( "dv[i]: "<< i << " : " << dv[i] << "\n");
         }
+        StabController(dv, Kv12, Param, Setpoint, controller_output);
+        force_attitude_convert(controller_output, attitude);
+        attitude.header.stamp = ros::Time::now();
+        target_attitude_pub.publish(attitude);
+        
         if( current_state.mode != "OFFBOARD"){
           t0 = ros::Time::now().toSec();
           // ROS_INFO_STREAM(t0);
         }
-        StabController(dv, Kv12, Param, Setpoint, controller_output);
+        
         // TracController(dv, Kv12, Param,  ros::Time::now().toSec()-t0, controller_output);
-        force_attitude_convert(controller_output, attitude);
-        target_attitude_pub.publish(attitude);
+        
 
-        // ROS_INFO_STREAM("gazebo position: " << quadpose.position.x  << "  " << quadpose.position.y << "  " << quadpose.position.z );
         // ROS_INFO_STREAM("px4 position: " << current_local_pos.pose.position.x << "  " << current_local_pos.pose.position.y << "  " << current_local_pos.pose.position.z);
 
         ros::spinOnce();
@@ -160,27 +196,6 @@ int main(int argc, char **argv)
     }
 
     return 0;
-}
-
-void force_attitude_convert(double controller_output[3], mavros_msgs::AttitudeTarget &attitude){
-  attitude.header.stamp = ros::Time::now();
-  double roll,pitch,yaw, thrust;
-  thrust = sqrt(controller_output[0]*controller_output[0] + controller_output[1]*controller_output[1] + controller_output[2]*controller_output[2]);
-  yaw = 0;
-  roll = std::asin(controller_output[1]/thrust);
-  pitch = std::atan2(controller_output[0], -controller_output[2]);
-
-  tf2::Quaternion attitude_target_q;
-  attitude_target_q.setRPY(roll, pitch, yaw);
-  attitude.orientation.x = attitude_target_q.getX();
-  attitude.orientation.y = attitude_target_q.getY();
-  attitude.orientation.z = attitude_target_q.getZ();
-  attitude.orientation.w = attitude_target_q.getW();
-
-  // attitude.thrust = (thrust-16.67122)/20 + 0.8168;
-  attitude.thrust = (thrust-16.67122)/20 + 0.7168;
-
-  // ROS_INFO_STREAM("Force: " << controller_output[0]<< "   " << controller_output[1]<< "   " << controller_output[2] << " orientation " << roll << "  " << pitch);
 }
 
 
@@ -202,25 +217,115 @@ void PT_state_pub(ros::Publisher &sls_state_pub){
     // PTState.PT_states[7] = sls_state1.vz;
     PTState.PT_states[8] = sls_state1.gamma_alpha;
     PTState.PT_states[9] = sls_state1.gamma_beta;
+    // PTState.PT_states[8] = 0;
+    // PTState.PT_states[9] = 0;
     sls_state_pub.publish(PTState);
+}
+
+void pose_cb(const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+	current_local_pos = *msg;
+    /*
+    quadpose.position.x = current_local_pos.pose.position.x;
+    quadpose.position.y = current_local_pos.pose.position.y;
+    quadpose.position.z = current_local_pos.pose.position.z;
+
+    loadpose.position.x = load_pose.pose.position.x;
+    loadpose.position.y = load_pose.pose.position.y;
+    loadpose.position.z = load_pose.pose.position.z;
+
+    quadtwist.linear.x = current_local_vel.twist.linear.x;
+    quadtwist.linear.y = current_local_vel.twist.linear.y;
+    quadtwist.linear.z = current_local_vel.twist.linear.z;
+
+    loadtwist.linear.x = load_vel.twist.linear.x;
+    loadtwist.linear.y = load_vel.twist.linear.y;
+    loadtwist.linear.z = load_vel.twist.linear.z;
+
+    double Lx = (loadpose.position.x) - (quadpose.position.x) ;
+    double Ly = (-loadpose.position.y) - (-quadpose.position.y) ;
+    double Lz = (-loadpose.position.z) - (-quadpose.position.z) ;
+
+    //ROS_INFO_STREAM("loadpose position: " << loadpose.position.x  << "  " << loadpose.position.y << "  " << loadpose.position.z );
+    //ROS_INFO_STREAM("gazebo position: " << quadpose.position.x  << "  " << quadpose.position.y << "  " << quadpose.position.z );
+
+    penangle = ToPenAngles( Lx, Ly, -Lz ); // in the paper the definition of n3 are opposite to the Z axis of gazebo
+    if (std::isnan(penangle.alpha)){
+        ROS_INFO_STREAM("Position: " << quadpose.position.x  << "  " << quadpose.position.y << "  " << quadpose.position.z );
+    }
+    sls_state1.alpha = penangle.alpha;
+    sls_state1.beta = penangle.beta;
+
+    double L = 1;
+    double g_alpha, g_beta;
+    g_beta = ((loadtwist.linear.x) - (quadtwist.linear.x))/(L*std::cos(sls_state1.beta));
+    g_alpha = ((-loadtwist.linear.y) - (-quadtwist.linear.y) - std::sin(sls_state1.alpha)*std::sin(sls_state1.beta)*g_beta*L)/(-std::cos(sls_state1.alpha)*std::cos(sls_state1.beta)*L);
+
+    sls_state1.gamma_alpha = g_alpha;
+    sls_state1.gamma_beta = g_beta;*/
+}
+
+
+
+
+PendulumAngles ToPenAngles(double Lx,double Ly,double Lz) { //x=base.x
+    PendulumAngles angles;
+    //double L_cal = sqrt(Lx*Lx + Ly*Ly + Lz*Lz);
+    //ROS_INFO_STREAM("Pendulum Length: " << L_cal);
+    double L = 1;
+
+    // ROS_INFO_STREAM(L);
+
+    // beta (y-axis rotation)
+    double sinbeta = Lx/L;
+    double cosbeta = Lz/(L*std::cos(angles.alpha));
+    angles.beta = std::asin(sinbeta);
+    if (std::isnan(angles.beta)){
+        ROS_INFO_STREAM("beta: " << angles.beta << "\n");
+    }
+    // alpha (x-axis rotation)
+
+    double cosa_cosb = Lz/L;
+    double sina_cosb = Ly/(-L);
+    angles.alpha = std::asin(sina_cosb/std::cos(angles.beta));
+    if (abs(sina_cosb/std::cos(angles.beta)) > 1 || std::isnan(sina_cosb/std::cos(angles.beta))){
+        ROS_INFO_STREAM("sina_cosb: " << sina_cosb/std::cos(angles.beta) << "\n"); //PROBLEM IS HERE --> sina_cosb/std::cost(angles.beta) > abs(1), so creates NaN when std::asin is called
+    }
+    return angles;
+}
+
+void force_attitude_convert(double controller_output[3], mavros_msgs::AttitudeTarget &attitude){
+  attitude.header.stamp = ros::Time::now();
+  double roll,pitch,yaw, thrust;
+  thrust = sqrt(controller_output[0]*controller_output[0] + controller_output[1]*controller_output[1] + controller_output[2]*controller_output[2]);
+  yaw = 0;
+  roll = std::asin(controller_output[1]/thrust);
+  pitch = std::atan2(controller_output[0], -controller_output[2]);
+
+  tf2::Quaternion attitude_target_q;
+  attitude_target_q.setRPY(roll, pitch, yaw);
+  attitude.orientation.x = attitude_target_q.getX();
+  attitude.orientation.y = attitude_target_q.getY();
+  attitude.orientation.z = attitude_target_q.getZ();
+  attitude.orientation.w = attitude_target_q.getW();
+
+  // attitude.thrust = (thrust-16.67122)/20 + 0.8168;
+  //attitude.thrust = (thrust-14.504)/8 + 0.78;
+  attitude.thrust = (thrust-16.67122)/20 + 0.7168;
+
+//   ROS_INFO_STREAM("Force: " << controller_output[0]<< "   " << controller_output[1]<< "   " << controller_output[2] << " orientation " << roll << "  " << pitch << " Thrust: " << thrust << " X position: " << loadpose.position.x << " Y position: " << loadpose.position.y <<" Z position: " << loadpose.position.z);
 }
 
 void gazebo_state_cb(const gazebo_msgs::LinkStates::ConstPtr& msg){
     //ROS_INFO("I heard: [%s\n]", msg->name);
     //current_state = *msg;
-    // cout<< msg->name[9]<< endl;
+    //cout<< msg->name[9]<< endl;
 
     quadpose = msg->pose[2];
     pendpose = msg->pose[9];
     loadpose = msg->pose[10]; // 10: pose of load; 9: pose of pendulum
     quadtwist = msg->twist[2];
     loadtwist = msg->twist[10];
-
-
-    // tf2::Quaternion q(pendpose.orientation.x, pendpose.orientation.y, pendpose.orientation.z, pendpose.orientation.w );
-    // tf2::Matrix3x3 m(q);
-    // double roll, pitch, yaw;
-    // m.getRPY(roll, pitch, yaw, 1);
 
     tf2::Quaternion quad_q(quadpose.orientation.x, quadpose.orientation.y, quadpose.orientation.z, quadpose.orientation.w);
     tf2::Matrix3x3 quad_m(quad_q);
@@ -238,6 +343,10 @@ void gazebo_state_cb(const gazebo_msgs::LinkStates::ConstPtr& msg){
     double Lx = (loadpose.position.x) - (quadpose.position.x) ;
     double Ly = (-loadpose.position.y) - (-quadpose.position.y) ;
     double Lz = (-loadpose.position.z) - (-quadpose.position.z) ;
+
+    //ROS_INFO_STREAM("loadpose position GS: " << loadpose.position.x  << "  " << loadpose.position.y << "  " << loadpose.position.z );
+    //ROS_INFO_STREAM("gazebo position GS: " << quadpose.position.x  << "  " << quadpose.position.y << "  " << quadpose.position.z );
+
     penangle = ToPenAngles( Lx, Ly, -Lz ); // in the paper the definition of n3 are opposite to the Z axis of gazebo
     sls_state1.alpha = penangle.alpha;
     sls_state1.beta = penangle.beta;
@@ -248,24 +357,4 @@ void gazebo_state_cb(const gazebo_msgs::LinkStates::ConstPtr& msg){
 
     sls_state1.gamma_alpha = g_alpha;
     sls_state1.gamma_beta = g_beta;
-}
-
-
-PendulumAngles ToPenAngles(double Lx,double Ly,double Lz) { //x=base.x
-    PendulumAngles angles;
-    double L = 1;
-
-    // beta (y-axis rotation)
-    double sinbeta = Lx/L;
-    double cosbeta = Lz/(L*std::cos(angles.alpha));
-    angles.beta = std::asin(sinbeta);
-    // ROS_INFO_STREAM("beta: " << angles.beta << "\n");
-    // alpha (x-axis rotation)
-
-    double cosa_cosb = Lz/L;
-    double sina_cosb = Ly/-L;
-    angles.alpha = std::asin(sina_cosb/std::cos(angles.beta));
-    // ROS_INFO_STREAM("alpha: " << angles.alpha << "\n");
-
-    return angles;
 }
