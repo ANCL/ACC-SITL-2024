@@ -16,7 +16,7 @@
 #include <tf2/transform_datatypes.h>
 
 #include <StabController.h>
-//#include <TracController.h>
+#include <TracController.h>
 #include <rtwtypes.h>
 #include <cstddef>
 #include <cstdlib>
@@ -137,6 +137,7 @@ int main(int argc, char **argv)
 	double distance = 0;
 
     int stage = 0;
+    int count = 0;
 
     while(ros::ok()){
         double dv[10] = {};
@@ -145,7 +146,7 @@ int main(int argc, char **argv)
         //double Kv12[12] = {2.2361,    3.1623, 3.1623,   3.0777,    8.4827,    8.4827,  0,    18.7962,    18.7962,  0,    17.4399,    17.4399};
         //double Kv12[12] = {3.0777,    5,  5,   2.2361,   6,    6,  0,     4,     4,  0,    3.1623,    3.1623};
         double Param[4] = {1.4, 0.08, 0.7, 9.8};
-        double Setpoint[3] = {0, 0, -1.1};
+        double Setpoint[3] = {0, 0, -1.5};
         for (int i=0;i<10; i++){
           dv[i] = PTState.PT_states[i];
           //ROS_INFO_STREAM( "dv[i]: "<< i << " : " << dv[i] << "\n");
@@ -192,16 +193,11 @@ int main(int argc, char **argv)
             distance = std::pow((current_local_pos.pose.position.x - Setpoint[0]),2) 
             + std::pow((current_local_pos.pose.position.y - (-Setpoint[1])),2)
             + std::pow((current_local_pos.pose.position.z - (-Setpoint[2]+0.95)),2);
-            //ROS_INFO_STREAM("Distance: " << distance);
-            char cmd[5];
-            std::cout << "Callback command (type 'record' to begin): ";
-            std::cin >> cmd;
-            if (strcmp(cmd, "land") == 0){
-                if( set_mode_client.call(land_mode) && land_mode.response.mode_sent){
-                    stage += 1;
-                    ROS_INFO("Land finished");
-                }
+            count++;
+            if (count % 10 == 0){
+                ROS_INFO_STREAM("Distance: " << distance);
             }
+            char cmd[5];
             if(ros::Time::now() - last_request > ros::Duration(15.0) && distance < 0.2){
                 stage += 1;
                 ROS_INFO("Achieve position setpoint and switch to Setpoint 1");
@@ -262,7 +258,7 @@ int main(int argc, char **argv)
             distance = std::pow((current_local_pos.pose.position.x - Setpoint[0]),2) 
             + std::pow((current_local_pos.pose.position.y - (-Setpoint[1])),2)
             + std::pow((current_local_pos.pose.position.z - (-Setpoint[2]+0.95)),2);
-            ROS_INFO_STREAM("Distance: " << distance);
+            //ROS_INFO_STREAM("Distance: " << distance);
             if(ros::Time::now() - last_request > ros::Duration(15.0) && distance < 0.2){
                 stage += 1;
                 ROS_INFO("Achieve position setpoint and switch to Trajectory Tracking");
@@ -270,7 +266,7 @@ int main(int argc, char **argv)
             }
             break;
         
-        /*case 5: //Trajectory tracking
+        case 5: //Trajectory tracking
             attitude.header.stamp = ros::Time::now();
             TracController(dv, Kv12, Param, ros::Time::now().toSec() - last_request.toSec(), controller_output);
             force_attitude_convert(controller_output, attitude);
@@ -280,7 +276,7 @@ int main(int argc, char **argv)
                 ROS_INFO("Finish Trajactory Tracking and land");
                 last_request = ros::Time::now();
             }
-            break;*/
+            break;
 
 
         case 6: // land

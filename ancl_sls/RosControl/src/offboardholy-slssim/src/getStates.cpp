@@ -17,7 +17,7 @@
 #include <tf2/transform_datatypes.h>
 
 #include <StabController.h>
-//#include <TracController.h>
+#include <TracController.h>
 #include <rtwtypes.h>
 #include <cstddef>
 #include <cstdlib>
@@ -171,7 +171,7 @@ int main(int argc, char **argv)
         //double Kv12[12] = {2.2361,    3.1623, 3.1623,   3.0777,    8.4827,    8.4827,  0,    18.7962,    18.7962,  0,    17.4399,    17.4399};
         //double Kv12[12] = {3.0777,    5,  5,   2.2361,   6,    6,  0,     4,     4,  0,    3.1623,    3.1623};
         double Param[4] = {1.5, 0.2, 1, 9.8};
-        double Setpoint[3] = {0, 0, -1.1};
+        double Setpoint[3] = {0, 0, -1.5};
         for (int i=0;i<10; i++){
           dv[i] = PTState.PT_states[i];
           // ROS_INFO_STREAM( "dv[i]: "<< i << " : " << dv[i] << "\n");
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
           // ROS_INFO_STREAM(t0);
         }
         
-        // TracController(dv, Kv12, Param,  ros::Time::now().toSec()-t0, controller_output);
+        TracController(dv, Kv12, Param,  ros::Time::now().toSec()-t0, controller_output);
         
 
         // ROS_INFO_STREAM("px4 position: " << current_local_pos.pose.position.x << "  " << current_local_pos.pose.position.y << "  " << current_local_pos.pose.position.z);
