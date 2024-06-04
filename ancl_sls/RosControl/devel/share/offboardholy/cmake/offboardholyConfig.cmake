@@ -67,7 +67,7 @@ set(offboardholy_CONFIG_INCLUDED TRUE)
 
 # set variables for source/devel/install prefixes
 if("TRUE" STREQUAL "TRUE")
-  set(offboardholy_SOURCE_PREFIX /home/ejyan/PX4_SITL_664/Tools/sitl_gazebo/ancl_sls/RosControl/src/offboardholy-slssim)
+  set(offboardholy_SOURCE_PREFIX /home/ejyan/PX4_SITL_664/Tools/sitl_gazebo/ancl_sls/RosControl/src/offboardholy)
   set(offboardholy_DEVEL_PREFIX /home/ejyan/PX4_SITL_664/Tools/sitl_gazebo/ancl_sls/RosControl/devel)
   set(offboardholy_INSTALL_PREFIX "")
   set(offboardholy_PREFIX ${offboardholy_DEVEL_PREFIX})
@@ -110,7 +110,7 @@ if(NOT "/home/ejyan/PX4_SITL_664/Tools/sitl_gazebo/ancl_sls/RosControl/devel/inc
         message(FATAL_ERROR "Project 'offboardholy' specifies '${idir}' as an include dir, which is not found.  It does not exist in '${include}'.  ${_report}")
       endif()
     else()
-      message(FATAL_ERROR "Project 'offboardholy' specifies '${idir}' as an include dir, which is not found.  It does neither exist as an absolute directory nor in '/home/ejyan/PX4_SITL_664/Tools/sitl_gazebo/ancl_sls/RosControl/src/offboardholy-slssim/${idir}'.  ${_report}")
+      message(FATAL_ERROR "Project 'offboardholy' specifies '${idir}' as an include dir, which is not found.  It does neither exist as an absolute directory nor in '/home/ejyan/PX4_SITL_664/Tools/sitl_gazebo/ancl_sls/RosControl/src/offboardholy/${idir}'.  ${_report}")
     endif()
     _list_append_unique(offboardholy_INCLUDE_DIRS ${include})
   endforeach()
