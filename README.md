@@ -1,200 +1,73 @@
-# PX4 Gazebo Plugin Suite for MAVLink SITL and HITL
-
-[![Build Status](https://github.com/PX4/sitl_gazebo/workflows/Build%20Tests/badge.svg)](https://github.com/PX4/sitl_gazebo/actions?query=workflow%3A%22Build+Tests%22) [![MacOS Build Tests](https://github.com/PX4/sitl_gazebo/workflows/MacOS%20Build%20Tests/badge.svg)](https://github.com/PX4/sitl_gazebo/actions?query=workflow%3A%22MacOS+Build+Tests%22) 
-
-This is a flight simulator for rovers, boats, multirotors, VTOL, fixed wing. It uses the motor model and other pieces from the RotorS simulator, but in contrast to RotorS has no dependency on ROS. Original project: https://github.com/ethz-asl/rotors_simulator.
-
-**If you use this simulator in academic work, please cite RotorS as per the README in the above link.**
+# Outer-loop Quasi-static State Feedback Output Tracking for a Slung Load System : PX4 SITL Validation
 
 
-# Installation
+This repo contains the simulation code for quasi-static state feedback output tracking of the outer-loop for a slung load system : PX4 SITL validation. 
 
-This simulator is designed to be used with the PX4 Autopilot. Please follow the official developer toolchain installation instructions:
-http://docs.px4.io/master/en/simulation/gazebo.html
+The code simulates a slung load system with a multirotor UAV running the [PX4 autopilot firmware](https://px4.io/). **SITL** (*Software in the loop*) is combined with the [Gazebo](https://github.com/gazebosim/gazebo-classic) simulator. The reason for using SITL simulation is to test controller performance using actual PX4 firmware. This ensures the controller is implementable on-board physical autopilots (e.g. Pixhawk 1, etc.) and that simulation results are closer to what are observed in flight testing. 
 
-# Contributing and Testing
+## Important Folders and Files
 
-Please refer to the installations instructions above for normal usage and to get the development environment installed. This section covers specifics for developers interested to contribute to the simulator.
+1. Folder containing the module which implements the quasi-static controller: [RosControl](./ancl_sls/RosControl/)
 
-## *sitl_gazebo* plugin dependencies
+2. For installing and running PX4-Gazebo simulator, please refer to: [PX4 Gazebo Plugin Suite for MAVLink SITL and HITL](https://github.com/PX4/PX4-SITL_gazebo)
 
-Some plugins on this packages require some specific dependencies:
+3. SLS Model SDF File: [iris_pendulum](./ancl_sls/iris_pendulum/)
 
-* Protobuf is required to generate custom protobuf messages to be published and subscribed between topics of different plugins;
-* Jinja 2 is used to generate some SDF models from templates;
-* Gstreamer is required for a plugin that streams video from a simulated camera.
+## Docker Image
+A docker image is provided [DockerHub](https://hub.docker.com/repository/docker/zifeifei/quasijint). The PX4 code and gazebo simulation code is at 
+```/src/PX4-Autopilot``` and ```/src/PX4-Autopilot/Tools/sitl_gazebo/``` respectively.
 
-## Build *sitl_gazebo*
+## Usage
 
-Clone the repository to your computer.
+### Running the SITL/Gazebo Simulation
 
-**IMPORTANT: If you do not clone to ~/src/sitl_gazebo, all remaining paths in these instructions will need to be adjusted.**
+1. In order to compile the PX4 code for SITL:
 
-```bash
-mkdir -p ~/src
-cd src
-git clone --recursive https://github.com/PX4/sitl_gazebo.git
+```make px4_sitl_default gazebo no_sim=1```
+
+When the build is successful, JMAVSim and the PXH shel are launched. In the terminal you should see
+
+```
+______  __   __    ___ 
+| ___ \ \ \ / /   /   |
+| |_/ /  \ V /   / /| |
+|  __/   /   \  / /_| |
+| |     / /^\ \ \___  |
+\_|     \/   \/     |_/
+
+px4 starting
+...
+INFO [tone_alarm] home_set
+INFO [tone_alarm] neutral
+pxh>
+
+```
+2. Start ROS, PX4, and Gazebo:
+
+```
+cd PX4_SITL_664/Tools/sitl_gazebo/ancl_sls
+./mavros_script.sh
 ```
 
-Create a build folder in the top level of your repository:
+3. Use QGroundControl to take off.
 
-```bash
-mkdir build
+4. Enable quasi-static controller:
+
+```
+rosrun offboardholy get_states_holy_node
+rosrun offboardholy offb_control_holy_node
 ```
 
-Navigate into the build directory and invoke CMake from it:
+## Debug/Customize Controller
 
-```bash
-cd ~/src/sitl_gazebo
-cd build
-cmake ..
-```
+If you run into any problems using the code, please open an [issue](https://help.github.com/en/github/managing-your-work-on-github/creating-an-issue), or you can email one of us:
 
-Now build the gazebo plugins by typing:
+* Zifei Jiang <zifei3@ualberta.ca>
+* Alan F.Lynch <alan.lynch@ualberta.ca>
+* Edward Yan <ejyan@ualberta.ca>
 
-```bash
-make -j$(nproc) -l$(nproc)
-```
+## Citing
 
-Next add the location of this build directory to your gazebo plugin path, e.g. add the following line to your `.bashrc` (Linux) or `.bash_profile` (Mac) file:
-
-```bash
-# Set the plugin path so Gazebo finds our model and sim
-export GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:$HOME/src/sitl_gazebo/build
-# Set the model path so Gazebo finds the airframes
-export GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:$HOME/src/sitl_gazebo/models
-# Disable online model lookup since this is quite experimental and unstable
-export GAZEBO_MODEL_DATABASE_URI=""
-```
-
-You also need to add the the root location of this repository, e.g. add the following line to your `.bashrc` (Linux) or `.bash_profile` (Mac) file:
-
-```bash
-# Set path to sitl_gazebo repository
-export SITL_GAZEBO_PATH=$HOME/src/sitl_gazebo
-```
-
-## Install
-
-If you wish the libraries and models to be usable anywhere on your system without
-specifying th paths, install as shown below.
-
-**Note: If you are using Ubuntu, it is best to see the packaging section.**
-
-```bash
-sudo make install
-```
-
-
-## Testing
-
-Gazebo will now launch when typing 'gazebo' on the shell:
-
-```bash
-. /usr/share/gazebo/setup.sh
-. /usr/share/mavlink_sitl_gazebo/setup.sh
-gazebo worlds/iris.world
-```
-
-Please refer to the documentation of the particular flight stack how to run it against this framework, e.g. [PX4](http://dev.px4.io/simulation-gazebo.html)
-
-
-### Unit Tests
-
-For building and running test an installation of 'googletest' is needed.
-
-On Ubuntu it can be installed with:
-
-```bash
-sudo apt-get install libgtest-dev
-cd /usr/src/googletest
-sudo cmake . && cd googletest
-sudo make -j$(nproc) -l$(nproc)
-sudo cp *.a /usr/lib
-```
-
-On macOS it needs to be installed from source:
-
-```bash
-git clone https://github.com/google/googletest
-pushd googletest
-mkdir build
-pushd build
-cmake ..
-make -j$(nproc) -l$(nproc)
-make install
-```
-
-When writing test it’s important to be careful which API functions of Gazebo are called. As no Gazebo server is running during the tests some functions can produce undefined behaviour (e.g. segfaults).
-
-## CUDA Hardware Accelerated H264 encoding (optional)
-
-1. Download CUDA 10.0 from https://developer.nvidia.com/cuda-toolkit-archive.
-2. Download Video Codec SDK 9.0 from https://developer.nvidia.com/video-codec-sdk-archive.
-3. Install both archives:
-
-```bash
-wget https://raw.githubusercontent.com/jackersson/env-setup/master/gst-nvidia-docker/install_video_codec_sdk.sh
-chmod +x install_video_codec_sdk.sh
-sudo ./install_video_codec_sdk.sh
-sudo dpkg -i cuda-repo-ubuntu*.deb
-sudo apt-key add /var/cuda-repo-<version>/7fa2af80.pub
-sudo apt-get update
-sudo apt-get install cuda
-```
-
-4. Reboot your system and run the command `nvidia-smi` to verify the successul installation of CUDA.
-5. Install GStreamer 1.18.3:
-
-```bash
-git clone https://github.com/GStreamer/gst-build -b 1.18.3
-cd gst-build
-meson -Dbuildtype=release -Dstrip=true -Dgst-plugins-bad:introspection=enabled -Dgst-plugins-bad:nvcodec=enabled builddir
-ninja -C builddir
-sudo meson install -C builddir
-```
-
-6. Add `<useCuda>true</useCuda>` to any `gazebo_gst_camera_plugin` in a SDF file. For example `./models/fpv_cam/fpv_cam.sdf`.
-
-#### *catkin tools*
-
-With *catkin*, the unit tests are enabled by default.
-
-```bash
-# After setting up the catkin workspace
-catkin build -j4 -l4 -DBUILD_ROS_PLUGINS=ON
-cd build/mavlink_sitl_gazebo/
-catkin run_tests
-```
-
-#### Plain CMake
-
-For building the tests with plain CMake, the flag `ENABLE_UNIT_TESTS` needs to be provided.
-
-```bash
-mkdir build && cd build
-cmake -DENABLE_UNIT_TESTS=On ..
-```
-
-Then build and run the tests:
-
-```bash
-make -j$(nproc) -l$(nproc)
-make test
-```
-
-
-## Packaging
-
-### Debian packages
-
-To create a debian package for Ubuntu and install it to your system.
-
-```bash
-cd Build
-cmake ..
-make
-rm *.deb
-cpack -G DEB
-sudo dpkg -i *.deb
-```
+## Acknowledgement
+Thanks to the [PX4 team](https://px4.io/) and [PX4 Gazebo Plugin](https://github.com/PX4/PX4-SITL_gazebo) for their open-source autopilot on which this code is based. 
+# SLS_PX4_SITL
