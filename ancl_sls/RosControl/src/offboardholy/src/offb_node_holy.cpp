@@ -180,8 +180,6 @@ int main(int argc, char **argv)
 
     dynamic_reconfigure::Server<offboardholy::configConfig> server;
     dynamic_reconfigure::Server<offboardholy::configConfig>::CallbackType f;
-
-    offboardholy::configConfig config;
     
     f = boost::bind(&callback, _1, _2);
     server.setCallback(f);
