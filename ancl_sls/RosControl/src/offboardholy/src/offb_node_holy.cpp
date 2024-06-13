@@ -71,6 +71,7 @@ double Kv12[12] = {};
 
 double Param[4] = {};
 
+//For Dynamic Reconfiguration
 void callback(offboardholy::configConfig &config, uint32_t level) {
    Kv12[0] = config.Kv_0;
    Kv12[1] = config.Kv_1;
@@ -178,10 +179,9 @@ int main(int argc, char **argv)
 
     int stage = 0;
 
+//Dynamic Reconfigure code
     dynamic_reconfigure::Server<offboardholy::configConfig> server;
     dynamic_reconfigure::Server<offboardholy::configConfig>::CallbackType f;
-
-    offboardholy::configConfig config;
     
     f = boost::bind(&callback, _1, _2);
     server.setCallback(f);
@@ -250,7 +250,7 @@ int main(int argc, char **argv)
 
             // ROS_INFO_STREAM("Distance: " << distance);
             if(ros::Time::now() - last_request > ros::Duration(15.0) && distance < 0.2){
-                //stage += 1;
+                stage += 1;
                 ROS_INFO("Achieve position setpoint and switch to Setpoint 1");
                 last_request = ros::Time::now();
             }
