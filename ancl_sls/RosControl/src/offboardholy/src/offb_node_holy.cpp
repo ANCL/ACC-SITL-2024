@@ -15,6 +15,8 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/transform_datatypes.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <offboardholy/configConfig.h> 
 #include <StabController.h>
 #include <TracController.h>
 #include <rtwtypes.h>
@@ -63,6 +65,41 @@ void sls_state_cb(const offboardholy::PTStates::ConstPtr& msg){
     PTState = *msg;
 }
 
+int configtest;
+
+double Kv12[12] = {};
+
+double Param[4] = {};
+
+void callback(offboardholy::configConfig &config, uint32_t level) {
+   Kv12[0] = config.Kv_0;
+   Kv12[1] = config.Kv_1;
+   Kv12[2] = config.Kv_2;
+   Kv12[3] = config.Kv_3;
+   Kv12[4] = config.Kv_4;
+   Kv12[5] = config.Kv_5;
+   Kv12[6] = config.Kv_6;
+   Kv12[7] = config.Kv_7;
+   Kv12[8] = config.Kv_8;
+   Kv12[9] = config.Kv_9;
+   Kv12[10] = config.Kv_10;
+   Kv12[11] = config.Kv_11;
+
+    Param[0] = config.quad_mass;
+    Param[1] = config.pend_mass;
+    Param[2] = config.pend_len;
+    Param[3] = config.grav;
+
+    ROS_INFO("Reconfiguration complete - Summary: ");
+    for (int i = 0; i < 12; i++){
+        ROS_INFO_STREAM("Kv[" << i << "]: " << Kv12[i]);
+    }
+
+    ROS_INFO_STREAM("Quad Mass: " << Param[0]);
+    ROS_INFO_STREAM("Pend Mass: " << Param[1]);
+    ROS_INFO_STREAM("Pend Length: " << Param[2]);
+    ROS_INFO_STREAM("Gravity: " << Param[3]);
+}
 
 int main(int argc, char **argv)
 {
@@ -141,14 +178,22 @@ int main(int argc, char **argv)
 
     int stage = 0;
 
+    dynamic_reconfigure::Server<offboardholy::configConfig> server;
+    dynamic_reconfigure::Server<offboardholy::configConfig>::CallbackType f;
+
+    offboardholy::configConfig config;
+    
+    f = boost::bind(&callback, _1, _2);
+    server.setCallback(f);
+
     while(ros::ok()){
         double dv[10] = {};
         double controller_output[3] = {};
-        double Kv12[12] = {2.2361,  3.1623,  3.1623,    3.0777,    8.4827,    8.4827,   0,    9.7962,    9.7962,      0,      5.4399,       5.4399};
+        //double Kv12[12] = {2.2361,  3.1623,  3.1623,    3.0777,    8.4827,    8.4827,   0,    9.7962,    9.7962,      0,      5.4399,       5.4399};
         double Kv15[15] = {2.2667,  3.2469,  3.2469,    3.0876,    8.5803,    8.5803,   -0.0224 ,   9.8503,      9.8503,    0 , 5.4498,  5.4498,     0,   -0.0316, -0.0316};
 
         // double Param[4] = {1.4, 0.08, 0.75, 9.8};
-        double Param[4] = {1.5, 0.2, 1, 9.8};
+        //double Param[4] = {1.5, 0.2, 1, 9.8};
         double Setpoint[3] = {0, 0, -0.3};
         //double Setpoint[3] = {0, 0, -10.0};
         for (int i=0;i<10; i++){
@@ -195,7 +240,7 @@ int main(int argc, char **argv)
         case 1: // setpoint position control
             attitude.header.stamp = ros::Time::now();
             StabController(dv, Kv12, Param, Setpoint, controller_output);
-            // IntrgralStabController(dv, Kv15, Param, Setpoint, controller_output, err_int, Ki, t_last);
+            //IntrgralStabController(dv, Kv15, Param, Setpoint, controller_output, err_int, Ki, t_last);
             force_attitude_convert(controller_output, attitude);
             attitude_setpoint_pub.publish(attitude);
             
@@ -205,7 +250,7 @@ int main(int argc, char **argv)
 
             // ROS_INFO_STREAM("Distance: " << distance);
             if(ros::Time::now() - last_request > ros::Duration(15.0) && distance < 0.2){
-                stage += 1;
+                //stage += 1;
                 ROS_INFO("Achieve position setpoint and switch to Setpoint 1");
                 last_request = ros::Time::now();
             }
@@ -431,7 +476,7 @@ void IntrgralStabController(const double x[10], const double Kv[15],
     double dt;
     // dt = ros::Time::now().toSec() - t_last;
 
-    ROS_INFO("dt = %f, t_last = %f", dt, t_last);
+    //ROS_INFO("dt = %f, t_last = %f", dt, t_last);
 
     err_int[0] += (setpoint[0] - x[0])*dt;
     err_int[1] += (setpoint[1] - x[1])*dt;
@@ -447,7 +492,7 @@ void IntrgralStabController(const double x[10], const double Kv[15],
         else if (err_int[i]<-20) err_int[i] = -20;
     }       
     
-    ROS_DEBUG("err1: %f, err2: %f, err3: %f", err_int[0], err_int[1], err_int[2]);
+    //ROS_DEBUG("err1: %f, err2: %f, err3: %f", err_int[0], err_int[1], err_int[2]);
 
 
     double x_ext[13]={};

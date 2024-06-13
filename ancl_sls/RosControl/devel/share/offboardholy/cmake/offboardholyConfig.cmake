@@ -177,7 +177,7 @@ foreach(library ${libraries})
   endif()
 endforeach()
 
-set(offboardholy_EXPORTED_TARGETS "offboardholy_generate_messages_cpp;offboardholy_generate_messages_eus;offboardholy_generate_messages_lisp;offboardholy_generate_messages_nodejs;offboardholy_generate_messages_py")
+set(offboardholy_EXPORTED_TARGETS "offboardholy_generate_messages_cpp;offboardholy_generate_messages_eus;offboardholy_generate_messages_lisp;offboardholy_generate_messages_nodejs;offboardholy_generate_messages_py;offboardholy_gencfg")
 # create dummy targets for exported code generation targets to make life of users easier
 foreach(t ${offboardholy_EXPORTED_TARGETS})
   if(NOT TARGET ${t})

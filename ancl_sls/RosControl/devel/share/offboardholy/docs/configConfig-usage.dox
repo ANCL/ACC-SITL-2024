@@ -1,0 +1,22 @@
+\subsubsection usage Usage
+\verbatim
+<node name="offboardholy" pkg="offboardholy" type="offboardholy">
+  <param name="Kv_0" type="double" value="2.2361" />
+  <param name="Kv_1" type="double" value="3.1623" />
+  <param name="Kv_2" type="double" value="3.1623" />
+  <param name="Kv_3" type="double" value="3.0777" />
+  <param name="Kv_4" type="double" value="8.4827" />
+  <param name="Kv_5" type="double" value="8.4827" />
+  <param name="Kv_6" type="double" value="0.0" />
+  <param name="Kv_7" type="double" value="9.7962" />
+  <param name="Kv_8" type="double" value="9.7962" />
+  <param name="Kv_9" type="double" value="0.0" />
+  <param name="Kv_10" type="double" value="5.4399" />
+  <param name="Kv_11" type="double" value="5.4399" />
+  <param name="quad_mass" type="double" value="1.5" />
+  <param name="pend_mass" type="double" value="0.2" />
+  <param name="pend_len" type="double" value="1.0" />
+  <param name="grav" type="double" value="9.8" />
+</node>
+\endverbatim
+

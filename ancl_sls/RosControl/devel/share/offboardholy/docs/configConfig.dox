@@ -1,0 +1,21 @@
+\subsubsection parameters ROS parameters
+
+Reads and maintains the following parameters on the ROS server
+
+- \b "~Kv_0" : \b [double] Gains min: -10.0, default: 2.2361, max: 10.0
+- \b "~Kv_1" : \b [double] Gains min: -10.0, default: 3.1623, max: 10.0
+- \b "~Kv_2" : \b [double] Gains min: -10.0, default: 3.1623, max: 10.0
+- \b "~Kv_3" : \b [double] Gains min: -10.0, default: 3.0777, max: 10.0
+- \b "~Kv_4" : \b [double] Gains min: -10.0, default: 8.4827, max: 10.0
+- \b "~Kv_5" : \b [double] Gains min: -10.0, default: 8.4827, max: 10.0
+- \b "~Kv_6" : \b [double] Gains min: -10.0, default: 0.0, max: 10.0
+- \b "~Kv_7" : \b [double] Gains min: -10.0, default: 9.7962, max: 10.0
+- \b "~Kv_8" : \b [double] Gains min: -10.0, default: 9.7962, max: 10.0
+- \b "~Kv_9" : \b [double] Gains min: -10.0, default: 0.0, max: 10.0
+- \b "~Kv_10" : \b [double] Gains min: -10.0, default: 5.4399, max: 10.0
+- \b "~Kv_11" : \b [double] Gains min: -10.0, default: 5.4399, max: 10.0
+- \b "~quad_mass" : \b [double] Drone Mass (kg) min: 0.0, default: 1.5, max: 5.0
+- \b "~pend_mass" : \b [double] Pendulum Mass (kg) min: 0.0, default: 0.2, max: 5.0
+- \b "~pend_len" : \b [double] Pendulum Length (m) min: 0.0, default: 1.0, max: 5.0
+- \b "~grav" : \b [double] gravitational field strength (m/s/s) min: 0.0, default: 9.8, max: 20.0
+
