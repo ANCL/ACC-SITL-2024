@@ -17,7 +17,7 @@
 #include <cstdlib>
 
 // Function Declarations
-extern void StabController(const double x[10], const double Kv[12],
+extern void StabController(const double x[10], const double Kv[15],
                            const double param[4], const double setpoint[3],
                            double u[3]);
 
