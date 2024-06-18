@@ -72,6 +72,7 @@ add_message_files(
   FILES
   PTStates.msg
   ActuatorControl0.msg
+  AttOut.msg
 )
 
 

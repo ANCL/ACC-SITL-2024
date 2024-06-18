@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include <offboardholy/PTStates.h>
+#include <offboardholy/AttOut.h>
 #include <mavros_msgs/Thrust.h>
 #include <mavros_msgs/AttitudeTarget.h>
 // #include <gazebo_msgs/LinkStates.h>
@@ -65,8 +66,6 @@ void sls_state_cb(const offboardholy::PTStates::ConstPtr& msg){
     PTState = *msg;
 }
 
-int configtest;
-
 double Kv12[12] = {};
 
 double Param[4] = {};
@@ -101,6 +100,10 @@ void callback(offboardholy::configConfig &config, uint32_t level) {
     ROS_INFO_STREAM("Gravity: " << Param[3]);
 }
 
+void att_out_pub(ros::Publisher &att_out_pub, const double controller_output[3]);
+
+offboardholy::AttOut att_out;
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "offb_node");
@@ -114,6 +117,9 @@ int main(int argc, char **argv)
 
     ros::Publisher attitude_setpoint_pub = nh.advertise<mavros_msgs::AttitudeTarget>("mavros/setpoint_raw/attitude", 10);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
+
+    //Attitude + Controller Output topic publisher
+    ros::Publisher att_con_pub = nh.advertise<offboardholy::AttOut>("/offboardholy/att_con", 10);
     
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
@@ -412,7 +418,8 @@ int main(int argc, char **argv)
 		// 		break;
         //     }
 		// }
-		
+		att_out_pub(att_con_pub, controller_output);
+
         ros::spinOnce();
         rate.sleep();
     }
@@ -466,6 +473,27 @@ void force_attitude_convert(double controller_output[3], mavros_msgs::AttitudeTa
 //     u[1] += Ki[1] * err_int[1];
 //     u[2] += Ki[2] * err_int[2];
 // }
+
+void att_out_pub(ros::Publisher &att_con_pub, const double controller_output[3]){
+    att_out.header.stamp = ros::Time::now();
+    
+    double roll,pitch,yaw, thrust;
+    thrust = sqrt(controller_output[0]*controller_output[0] + controller_output[1]*controller_output[1] + controller_output[2]*controller_output[2]);
+    yaw = 0;
+    roll = std::asin(controller_output[1]/thrust);
+    pitch = std::atan2(controller_output[0], -controller_output[2]);
+
+    att_out.rpy[0] = roll;
+    att_out.rpy[1] = pitch;
+    att_out.rpy[2] = yaw;
+
+    for (int i = 0; i < 3; i++){
+        att_out.con_out[i] = controller_output[i];
+    }
+
+    att_con_pub.publish(att_out);
+}
+
 
 void IntrgralStabController(const double x[10], const double Kv[15],
                            const double param[4], const double setpoint[3],

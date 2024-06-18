@@ -7,6 +7,8 @@
   :components ((:file "_package")
     (:file "ActuatorControl0" :depends-on ("_package_ActuatorControl0"))
     (:file "_package_ActuatorControl0" :depends-on ("_package"))
+    (:file "AttOut" :depends-on ("_package_AttOut"))
+    (:file "_package_AttOut" :depends-on ("_package"))
     (:file "PTStates" :depends-on ("_package_PTStates"))
     (:file "_package_PTStates" :depends-on ("_package"))
   ))

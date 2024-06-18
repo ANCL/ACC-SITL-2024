@@ -3,6 +3,8 @@
   (:export
    "<ACTUATORCONTROL0>"
    "ACTUATORCONTROL0"
+   "<ATTOUT>"
+   "ATTOUT"
    "<PTSTATES>"
    "PTSTATES"
   ))
