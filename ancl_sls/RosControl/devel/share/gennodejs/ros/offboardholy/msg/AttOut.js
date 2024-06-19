@@ -22,6 +22,7 @@ class AttOut {
       this.header = null;
       this.rpy = null;
       this.con_out = null;
+      this.target_thrust = null;
     }
     else {
       if (initObj.hasOwnProperty('header')) {
@@ -42,6 +43,12 @@ class AttOut {
       else {
         this.con_out = new Array(3).fill(0);
       }
+      if (initObj.hasOwnProperty('target_thrust')) {
+        this.target_thrust = initObj.target_thrust
+      }
+      else {
+        this.target_thrust = 0.0;
+      }
     }
   }
 
@@ -61,6 +68,8 @@ class AttOut {
     }
     // Serialize message field [con_out]
     bufferOffset = _arraySerializer.float64(obj.con_out, buffer, bufferOffset, 3);
+    // Serialize message field [target_thrust]
+    bufferOffset = _serializer.float64(obj.target_thrust, buffer, bufferOffset);
     return bufferOffset;
   }
 
@@ -74,13 +83,15 @@ class AttOut {
     data.rpy = _arrayDeserializer.float64(buffer, bufferOffset, 3)
     // Deserialize message field [con_out]
     data.con_out = _arrayDeserializer.float64(buffer, bufferOffset, 3)
+    // Deserialize message field [target_thrust]
+    data.target_thrust = _deserializer.float64(buffer, bufferOffset);
     return data;
   }
 
   static getMessageSize(object) {
     let length = 0;
     length += std_msgs.msg.Header.getMessageSize(object.header);
-    return length + 48;
+    return length + 56;
   }
 
   static datatype() {
@@ -90,7 +101,7 @@ class AttOut {
 
   static md5sum() {
     //Returns md5sum for a message object
-    return '8366b83287248a39a7aec7b15deddce3';
+    return '98ce28f293a4f5e66b12864b50c00965';
   }
 
   static messageDefinition() {
@@ -100,6 +111,7 @@ class AttOut {
     Header header
     float64[3] rpy
     float64[3] con_out
+    float64 target_thrust
     ================================================================================
     MSG: std_msgs/Header
     # Standard metadata for higher-level stamped data types.
@@ -144,6 +156,13 @@ class AttOut {
     }
     else {
       resolved.con_out = new Array(3).fill(0)
+    }
+
+    if (msg.target_thrust !== undefined) {
+      resolved.target_thrust = msg.target_thrust;
+    }
+    else {
+      resolved.target_thrust = 0.0
     }
 
     return resolved;

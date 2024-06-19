@@ -16,7 +16,7 @@
 
 (defclass offboardholy::AttOut
   :super ros::object
-  :slots (_header _rpy _con_out ))
+  :slots (_header _rpy _con_out _target_thrust ))
 
 (defmethod offboardholy::AttOut
   (:init
@@ -24,11 +24,13 @@
     ((:header __header) (instance std_msgs::Header :init))
     ((:rpy __rpy) (make-array 3 :initial-element 0.0 :element-type :float))
     ((:con_out __con_out) (make-array 3 :initial-element 0.0 :element-type :float))
+    ((:target_thrust __target_thrust) 0.0)
     )
    (send-super :init)
    (setq _header __header)
    (setq _rpy __rpy)
    (setq _con_out __con_out)
+   (setq _target_thrust (float __target_thrust))
    self)
   (:header
    (&rest __header)
@@ -43,6 +45,9 @@
   (:con_out
    (&optional __con_out)
    (if __con_out (setq _con_out __con_out)) _con_out)
+  (:target_thrust
+   (&optional __target_thrust)
+   (if __target_thrust (setq _target_thrust __target_thrust)) _target_thrust)
   (:serialization-length
    ()
    (+
@@ -52,6 +57,8 @@
     (* 8    3)
     ;; float64[3] _con_out
     (* 8    3)
+    ;; float64 _target_thrust
+    8
     ))
   (:serialize
    (&optional strm)
@@ -67,6 +74,8 @@
      (dotimes (i 3)
        (sys::poke (elt _con_out i) (send s :buffer) (send s :count) :double) (incf (stream-count s) 8)
        )
+     ;; float64 _target_thrust
+       (sys::poke _target_thrust (send s :buffer) (send s :count) :double) (incf (stream-count s) 8)
      ;;
      (if (null strm) (get-output-stream-string s))))
   (:deserialize
@@ -81,17 +90,20 @@
    (dotimes (i (length _con_out))
      (setf (elt _con_out i) (sys::peek buf ptr- :double)) (incf ptr- 8)
      )
+   ;; float64 _target_thrust
+     (setq _target_thrust (sys::peek buf ptr- :double)) (incf ptr- 8)
    ;;
    self)
   )
 
-(setf (get offboardholy::AttOut :md5sum-) "8366b83287248a39a7aec7b15deddce3")
+(setf (get offboardholy::AttOut :md5sum-) "98ce28f293a4f5e66b12864b50c00965")
 (setf (get offboardholy::AttOut :datatype-) "offboardholy/AttOut")
 (setf (get offboardholy::AttOut :definition-)
       "#For attitude (roll, pitch, yaw) and controller outputs (3)
 Header header
 float64[3] rpy
 float64[3] con_out
+float64 target_thrust
 ================================================================================
 MSG: std_msgs/Header
 # Standard metadata for higher-level stamped data types.
@@ -112,6 +124,6 @@ string frame_id
 
 
 
-(provide :offboardholy/AttOut "8366b83287248a39a7aec7b15deddce3")
+(provide :offboardholy/AttOut "98ce28f293a4f5e66b12864b50c00965")
 
 

@@ -483,6 +483,8 @@ void att_out_pub(ros::Publisher &att_con_pub, const double controller_output[3])
     roll = std::asin(controller_output[1]/thrust);
     pitch = std::atan2(controller_output[0], -controller_output[2]);
 
+    att_out.target_thrust = thrust;
+
     att_out.rpy[0] = roll;
     att_out.rpy[1] = pitch;
     att_out.rpy[2] = yaw;

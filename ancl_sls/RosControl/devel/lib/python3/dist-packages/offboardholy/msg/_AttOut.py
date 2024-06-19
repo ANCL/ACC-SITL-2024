@@ -9,13 +9,14 @@ import struct
 import std_msgs.msg
 
 class AttOut(genpy.Message):
-  _md5sum = "8366b83287248a39a7aec7b15deddce3"
+  _md5sum = "98ce28f293a4f5e66b12864b50c00965"
   _type = "offboardholy/AttOut"
   _has_header = True  # flag to mark the presence of a Header object
   _full_text = """#For attitude (roll, pitch, yaw) and controller outputs (3)
 Header header
 float64[3] rpy
 float64[3] con_out
+float64 target_thrust
 ================================================================================
 MSG: std_msgs/Header
 # Standard metadata for higher-level stamped data types.
@@ -32,8 +33,8 @@ time stamp
 #Frame this data is associated with
 string frame_id
 """
-  __slots__ = ['header','rpy','con_out']
-  _slot_types = ['std_msgs/Header','float64[3]','float64[3]']
+  __slots__ = ['header','rpy','con_out','target_thrust']
+  _slot_types = ['std_msgs/Header','float64[3]','float64[3]','float64']
 
   def __init__(self, *args, **kwds):
     """
@@ -43,7 +44,7 @@ string frame_id
     changes.  You cannot mix in-order arguments and keyword arguments.
 
     The available fields are:
-       header,rpy,con_out
+       header,rpy,con_out,target_thrust
 
     :param args: complete set of field values, in .msg order
     :param kwds: use keyword arguments corresponding to message field names
@@ -58,10 +59,13 @@ string frame_id
         self.rpy = [0.] * 3
       if self.con_out is None:
         self.con_out = [0.] * 3
+      if self.target_thrust is None:
+        self.target_thrust = 0.
     else:
       self.header = std_msgs.msg.Header()
       self.rpy = [0.] * 3
       self.con_out = [0.] * 3
+      self.target_thrust = 0.
 
   def _get_types(self):
     """
@@ -85,6 +89,8 @@ string frame_id
       buff.write(struct.Struct('<I%ss'%length).pack(length, _x))
       buff.write(_get_struct_3d().pack(*self.rpy))
       buff.write(_get_struct_3d().pack(*self.con_out))
+      _x = self.target_thrust
+      buff.write(_get_struct_d().pack(_x))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -118,6 +124,9 @@ string frame_id
       start = end
       end += 24
       self.con_out = _get_struct_3d().unpack(str[start:end])
+      start = end
+      end += 8
+      (self.target_thrust,) = _get_struct_d().unpack(str[start:end])
       return self
     except struct.error as e:
       raise genpy.DeserializationError(e)  # most likely buffer underfill
@@ -140,6 +149,8 @@ string frame_id
       buff.write(struct.Struct('<I%ss'%length).pack(length, _x))
       buff.write(self.rpy.tostring())
       buff.write(self.con_out.tostring())
+      _x = self.target_thrust
+      buff.write(_get_struct_d().pack(_x))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -174,6 +185,9 @@ string frame_id
       start = end
       end += 24
       self.con_out = numpy.frombuffer(str[start:end], dtype=numpy.float64, count=3)
+      start = end
+      end += 8
+      (self.target_thrust,) = _get_struct_d().unpack(str[start:end])
       return self
     except struct.error as e:
       raise genpy.DeserializationError(e)  # most likely buffer underfill
@@ -194,3 +208,9 @@ def _get_struct_3d():
     if _struct_3d is None:
         _struct_3d = struct.Struct("<3d")
     return _struct_3d
+_struct_d = None
+def _get_struct_d():
+    global _struct_d
+    if _struct_d is None:
+        _struct_d = struct.Struct("<d")
+    return _struct_d

@@ -5,4 +5,6 @@
           RPY
           CON_OUT-VAL
           CON_OUT
+          TARGET_THRUST-VAL
+          TARGET_THRUST
 ))

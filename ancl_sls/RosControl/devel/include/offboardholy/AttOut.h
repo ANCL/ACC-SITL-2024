@@ -27,7 +27,8 @@ struct AttOut_
   AttOut_()
     : header()
     , rpy()
-    , con_out()  {
+    , con_out()
+    , target_thrust(0.0)  {
       rpy.assign(0.0);
 
       con_out.assign(0.0);
@@ -35,7 +36,8 @@ struct AttOut_
   AttOut_(const ContainerAllocator& _alloc)
     : header(_alloc)
     , rpy()
-    , con_out()  {
+    , con_out()
+    , target_thrust(0.0)  {
   (void)_alloc;
       rpy.assign(0.0);
 
@@ -52,6 +54,9 @@ struct AttOut_
 
    typedef boost::array<double, 3>  _con_out_type;
   _con_out_type con_out;
+
+   typedef double _target_thrust_type;
+  _target_thrust_type target_thrust;
 
 
 
@@ -84,7 +89,8 @@ bool operator==(const ::offboardholy::AttOut_<ContainerAllocator1> & lhs, const 
 {
   return lhs.header == rhs.header &&
     lhs.rpy == rhs.rpy &&
-    lhs.con_out == rhs.con_out;
+    lhs.con_out == rhs.con_out &&
+    lhs.target_thrust == rhs.target_thrust;
 }
 
 template<typename ContainerAllocator1, typename ContainerAllocator2>
@@ -141,12 +147,12 @@ struct MD5Sum< ::offboardholy::AttOut_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "8366b83287248a39a7aec7b15deddce3";
+    return "98ce28f293a4f5e66b12864b50c00965";
   }
 
   static const char* value(const ::offboardholy::AttOut_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x8366b83287248a39ULL;
-  static const uint64_t static_value2 = 0xa7aec7b15deddce3ULL;
+  static const uint64_t static_value1 = 0x98ce28f293a4f5e6ULL;
+  static const uint64_t static_value2 = 0x6b12864b50c00965ULL;
 };
 
 template<class ContainerAllocator>
@@ -169,6 +175,7 @@ struct Definition< ::offboardholy::AttOut_<ContainerAllocator> >
 "Header header\n"
 "float64[3] rpy\n"
 "float64[3] con_out\n"
+"float64 target_thrust\n"
 "================================================================================\n"
 "MSG: std_msgs/Header\n"
 "# Standard metadata for higher-level stamped data types.\n"
@@ -205,6 +212,7 @@ namespace serialization
       stream.next(m.header);
       stream.next(m.rpy);
       stream.next(m.con_out);
+      stream.next(m.target_thrust);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -238,6 +246,8 @@ struct Printer< ::offboardholy::AttOut_<ContainerAllocator> >
       s << indent << "  con_out[" << i << "]: ";
       Printer<double>::stream(s, indent + "  ", v.con_out[i]);
     }
+    s << indent << "target_thrust: ";
+    Printer<double>::stream(s, indent + "  ", v.target_thrust);
   }
 };
 
